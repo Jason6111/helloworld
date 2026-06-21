@@ -884,11 +884,26 @@ local function build_v2ray_mihomo_proxy(sid)
 		proxy.reserved = parse_wireguard_reserved(sid)
 		proxy["persistent-keepalive"] = number_or_nil(get_server_field(sid, "keepaliveperiod", ""))
 		proxy.mtu = number_or_nil(get_server_field(sid, "mtu", ""))
+	elseif protocol == "snell" then
+		proxy.type = "snell"
+		proxy.psk = get_server_field(sid, "snell_psk", "")
+		proxy.version = number_or_nil(get_server_field(sid, "snell_version", ""))
+		local obfs_mode = string_or_nil(get_server_field(sid, "snell_obfs", ""))
+		local obfs_host = string_or_nil(get_server_field(sid, "snell_obfs_host", ""))
+		if obfs_mode or obfs_host then
+			proxy["obfs-opts"] = {
+				mode = obfs_mode,
+				host = obfs_host
+			}
+		end
 	else
 		return nil
 	end
 
 	if not proxy.server or proxy.server == "" or not proxy.port or proxy.port == 0 then
+		return nil
+	end
+	if proxy.type == "snell" and (not proxy.psk or proxy.psk == "") then
 		return nil
 	end
 	return proxy
