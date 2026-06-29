@@ -1373,6 +1373,10 @@ msgstr "接口控制"
 msgid "Invalid"
 msgstr "无效的"
 
+#: applications/luci-app-ssr-plus/luasrc/model/cbi/shadowsocksr/client-config.lua:658
+msgid "Invalid Realm URL."
+msgstr "Realm URL 不正确。"
+
 #: applications/luci-app-ssr-plus/luasrc/view/shadowsocksr/ssrurl.htm:1109
 msgid "Invalid format."
 msgstr "无效的格式。"
