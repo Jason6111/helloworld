@@ -116,6 +116,7 @@ jobs:
           echo "src-link helloworld $(pwd)/../source" >> feeds.conf
           ./scripts/feeds update helloworld
           ./scripts/feeds install -a -p helloworld
+          ./scripts/feeds install -f -p helloworld xray-core
           cat <<'EOF' > .config
           CONFIG_ALL_NONSHARED=n
           CONFIG_ALL_KMODS=n
@@ -154,6 +155,7 @@ jobs:
           cd sdk
           ./scripts/feeds update helloworld
           ./scripts/feeds install -a -p helloworld
+          ./scripts/feeds install -f -p helloworld xray-core
 
           packages=(luci-app-ssr-plus xray-core mihomo)
           for package in "${packages[@]}"; do
