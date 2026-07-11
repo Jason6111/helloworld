@@ -30,11 +30,22 @@ jobs:
           {
             echo "# helloworld ${tag_name}"
             echo
-            echo "Release tag: ${tag_name}"
-            echo "Commit: ${GITHUB_SHA}"
+            previous_tag="$(git -C source describe --tags --abbrev=0 "${GITHUB_SHA}^" 2>/dev/null || true)"
+            if [ -n "$previous_tag" ]; then
+              echo "Changes since ${previous_tag}:"
+              commit_range="${previous_tag}..${GITHUB_SHA}"
+            else
+              echo "Changes included in ${tag_name}:"
+              commit_range="${GITHUB_SHA}"
+            fi
             echo
-            echo "Package to build:"
+            git -C source log --pretty=format:'- %s (`%h`)' "$commit_range"
+            echo
+            echo
+            echo "Packages:"
             echo "- luci-app-ssr-plus"
+            echo "- xray-core"
+            echo "- mihomo"
           } > release_note.md
 
           echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
@@ -130,6 +141,8 @@ jobs:
           CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_V2ray_Plugin=n
           CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Client=n
           CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Server=n
+          CONFIG_PACKAGE_xray-core=m
+          CONFIG_PACKAGE_mihomo=m
           EOF
           make defconfig
           make clean
@@ -142,23 +155,30 @@ jobs:
           ./scripts/feeds update helloworld
           ./scripts/feeds install -a -p helloworld
 
-          make package/feeds/helloworld/luci-app-ssr-plus/clean
-          if ! make package/feeds/helloworld/luci-app-ssr-plus/compile -j"$(nproc)"; then
-            make package/feeds/helloworld/luci-app-ssr-plus/compile -j1 V=s
-          fi
+          packages=(luci-app-ssr-plus xray-core mihomo)
+          for package in "${packages[@]}"; do
+            make "package/feeds/helloworld/${package}/clean"
+            if ! make "package/feeds/helloworld/${package}/compile" -j"$(nproc)"; then
+              make "package/feeds/helloworld/${package}/compile" -j1 V=s
+            fi
+          done
 
           package_dir="$(pwd)/bin/packages/${SDK_ARCH}/helloworld"
           dist_dir="$(pwd)/../dist/${{ matrix.build_arch }}"
           mkdir -p "$dist_dir"
 
           shopt -s nullglob
-          package_files=("$package_dir"/luci-app-ssr-plus*.${PACKAGE_EXT})
-          if [ ${#package_files[@]} -eq 0 ]; then
-            echo "No luci-app-ssr-plus .${PACKAGE_EXT} packages were produced in ${package_dir}" >&2
-            exit 1
-          fi
+          package_files=()
+          for package in "${packages[@]}"; do
+            matches=("$package_dir"/"${package}"*."${PACKAGE_EXT}")
+            if [ ${#matches[@]} -eq 0 ]; then
+              echo "No ${package} .${PACKAGE_EXT} package was produced in ${package_dir}" >&2
+              exit 1
+            fi
+            package_files+=("${matches[@]}")
+          done
 
-          cp "$package_dir"/luci-app-ssr-plus*.${PACKAGE_EXT} "$dist_dir"/
+          cp "${package_files[@]}" "$dist_dir"/
           cp "$package_dir"/Packages* "$dist_dir"/ 2>/dev/null || true
           cp "$package_dir"/APKINDEX* "$dist_dir"/ 2>/dev/null || true
 
@@ -225,6 +245,5 @@ jobs:
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
           body_path: release-note/release_note.md
-          generate_release_notes: true
           prerelease: ${{ contains(needs.prepare.outputs.tag_name, '-beta') || contains(needs.prepare.outputs.tag_name, '-rc') }}
           files: releases/*
