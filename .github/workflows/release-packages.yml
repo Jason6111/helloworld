@@ -241,10 +241,6 @@ jobs:
               [ -f "$package" ] || continue
               cp "$package" releases/
             done
-
-            if [ -f "$dir/BUILD-INFO.txt" ]; then
-              cp "$dir/BUILD-INFO.txt" "releases/$(basename "$dir")-BUILD-INFO.txt"
-            fi
           done
 
           ls -lh releases
