@@ -113,6 +113,10 @@ jobs:
           src-git routing https://git.openwrt.org/feed/routing.git;${FEED_BRANCH}
           EOF
           ./scripts/feeds update -a
+          if [ -n "${GO_FEED_BRANCH:-}" ]; then
+            git -C feeds/packages fetch --depth=1 origin "$GO_FEED_BRANCH"
+            git -C feeds/packages checkout FETCH_HEAD -- lang/golang
+          fi
           rm -rf feeds/packages/net/xray-core
           ./scripts/feeds update -i packages
           ./scripts/feeds install -a
