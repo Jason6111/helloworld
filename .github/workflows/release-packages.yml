@@ -4,6 +4,7 @@ name: Release Packages
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 env:
   TZ: Asia/Shanghai
@@ -207,7 +208,7 @@ jobs:
     needs:
       - prepare
       - build
-    if: always()
+    if: ${{ always() && github.event_name == 'push' }}
     runs-on: ubuntu-latest
 
     steps:
